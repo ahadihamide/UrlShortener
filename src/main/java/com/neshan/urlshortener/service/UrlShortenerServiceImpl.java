@@ -6,17 +6,18 @@ import com.neshan.urlshortener.exception.UserLimitException;
 import com.neshan.urlshortener.repo.ShortUrlRepository;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import javax.transaction.Transactional;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-@Service
+@Service @Slf4j
 public class UrlShortenerServiceImpl implements UrlShortenerService {
 
   private final ShortUrlRepository shortUrlRepository;
@@ -56,16 +57,12 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
                     new ShortUrl(username, shortUrl, longUrl, LocalDate.now(), 0L)));
   }
 
+  @Transactional
   @Override
   public Mono<String> getLongUrlAndIncrementVisit(String shortUrl) {
     return Mono.just(shortUrl)
-        .map(url -> shortUrlRepository.findById(url).orElseThrow())
-        .doOnNext(
-            shortUrlEntity -> {
-              shortUrlEntity.setVisitCount(shortUrlEntity.getVisitCount() + 1);
-              shortUrlRepository.save(shortUrlEntity);
-            })
-        .map(ShortUrl::getLongUrl);
+        .map(url -> shortUrlRepository.findByIdAndIncrementVisit(url).orElseThrow())
+        .map(ShortUrl::getLongUrl).doOnError(t -> log.error(t.getMessage()));
   }
 
   @Override
