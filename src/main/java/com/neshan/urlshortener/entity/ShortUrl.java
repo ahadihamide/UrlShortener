@@ -1,5 +1,6 @@
 package com.neshan.urlshortener.entity;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,7 +27,7 @@ public class ShortUrl {
   private String username;
 
   @Column(name = "last_visit")
-  private LocalDate lastVisit;
+  private Date lastVisit;
 
   @Column(name = "long_url")
   private String longUrl;
@@ -37,7 +38,7 @@ public class ShortUrl {
   public ShortUrl(String user, String shortUrl, String longUrl, LocalDate creationDate, long visitCount) {
     this.shortUrl = shortUrl;
     this.username = user;
-    this.lastVisit = creationDate;
+    this.lastVisit = java.sql.Date.valueOf(creationDate);
     this.longUrl = longUrl;
     this.visitCount = visitCount;
   }

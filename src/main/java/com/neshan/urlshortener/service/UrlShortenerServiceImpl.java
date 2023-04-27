@@ -6,9 +6,13 @@ import com.neshan.urlshortener.exception.UserLimitException;
 import com.neshan.urlshortener.repo.ShortUrlRepository;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Date;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -86,5 +90,11 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
 
   private Mono<String> generateShortUrl(String longUrl, String username) {
     return Mono.just(hashUrl(username + longUrl).substring(0, 7));
+  }
+
+  @Scheduled(cron = "0 0 0 * * *") // run at midnight every day
+  public void deleteOldUrls() {
+    LocalDateTime cutoffDate = LocalDateTime.now().minusYears(1);
+    shortUrlRepository.deleteByLastVisitBefore(java.sql.Date.valueOf((cutoffDate.toLocalDate())));
   }
 }
