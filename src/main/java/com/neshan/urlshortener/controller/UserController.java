@@ -6,12 +6,9 @@ import com.neshan.urlshortener.model.AuthenticationResponse;
 import com.neshan.urlshortener.repo.UserRepository;
 import com.neshan.urlshortener.utils.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -50,10 +47,5 @@ public class UserController {
               String jwt = JwtUtil.generateToken(authentication);
               return new AuthenticationResponse(jwt);
             });
-  }
-
-  @ExceptionHandler(AuthenticationException.class)
-  public Mono<ResponseEntity<String>> handleAuthenticationException(AuthenticationException ex) {
-    return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage()));
   }
 }

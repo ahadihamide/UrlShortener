@@ -1,6 +1,5 @@
 package com.neshan.urlshortener.controller;
 
-import com.neshan.urlshortener.exception.AuthorizationException;
 import com.neshan.urlshortener.exception.InvalidTokenException;
 import com.neshan.urlshortener.exception.UserLimitException;
 import com.neshan.urlshortener.model.DeleteRequest;
@@ -13,7 +12,6 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -81,31 +79,5 @@ public class UrlShortenerController {
     if (StringUtils.isBlank(shortUrl)) throw new IllegalArgumentException("Invalid short url");
 
     return (shortUrl.contains(baseUrl)) ? shortUrl.substring(baseUrl.length()) : shortUrl;
-  }
-
-  @ExceptionHandler(InvalidTokenException.class)
-  public Mono<ResponseEntity<String>> handleInvalidTokenException(InvalidTokenException ex) {
-    return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage()));
-  }
-
-  @ExceptionHandler(AuthorizationException.class)
-  public Mono<ResponseEntity<String>> handleInvalidTokenException(AuthorizationException ex) {
-    return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage()));
-  }
-
-  @ExceptionHandler(UserLimitException.class)
-  public Mono<ResponseEntity<String>> handleUserLimitException(UserLimitException ex) {
-    return Mono.just(ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(ex.getMessage()));
-  }
-
-  @ExceptionHandler(IllegalArgumentException.class)
-  public Mono<ResponseEntity<String>> handleInvalidShortUrlException(IllegalArgumentException ex) {
-    return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage()));
-  }
-
-  @ExceptionHandler(EmptyResultDataAccessException.class)
-  public Mono<ResponseEntity<String>> handleInvalidShortUrlException(
-      EmptyResultDataAccessException ex) {
-    return Mono.just(ResponseEntity.status(HttpStatus.NO_CONTENT).body(ex.getMessage()));
   }
 }
