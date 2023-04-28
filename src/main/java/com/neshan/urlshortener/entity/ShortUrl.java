@@ -17,8 +17,6 @@ import javax.persistence.Id;
 @Getter
 @Setter
 @NoArgsConstructor
-@Cacheable
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE, region = "short_url")
 public class ShortUrl {
   @Id
   @Column(name = "short_url")

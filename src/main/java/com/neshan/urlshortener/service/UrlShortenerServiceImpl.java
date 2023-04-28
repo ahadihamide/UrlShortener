@@ -13,11 +13,15 @@ import java.util.Optional;
 import javax.transaction.Transactional;
 
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-@Service @Slf4j
+@Service @Slf4j @EnableScheduling
 public class UrlShortenerServiceImpl implements UrlShortenerService {
 
   private final ShortUrlRepository shortUrlRepository;
@@ -89,9 +93,20 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
     return Mono.just(hashUrl(username + longUrl).substring(0, 7));
   }
 
+  @Autowired
+  private RedissonClient redissonClient;
   @Scheduled(cron = "0 0 0 * * *") // run at midnight every day
+  @Transactional
   public void deleteOldUrls() {
-    LocalDateTime cutoffDate = LocalDateTime.now().minusYears(1);
-    shortUrlRepository.deleteByLastVisitBefore(java.sql.Date.valueOf((cutoffDate.toLocalDate())));
+    LocalDate cutoffDate = LocalDate.now().minusYears(1);
+    log.info("deleting urls older than {}" , cutoffDate);
+    RLock lock = redissonClient.getLock(cutoffDate.toString());
+    lock.lock();
+    try {
+      shortUrlRepository.deleteByLastVisitBefore(java.sql.Date.valueOf((cutoffDate)));
+    } finally {
+      lock.unlock();
+    }
+
   }
 }
