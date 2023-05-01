@@ -44,8 +44,6 @@ public class UrlShortenerController {
         .flatMap(userDetails -> urlShortenerService.shortenUrl(longUrl, authentication.getName()))
         .map(baseUrl::concat);
   }
-  // https://swagger.io/docs/specification/authentication/bearer-authentication/
-  // https://stackoverflow.com/questions/33435286/swagger-ui-passing-authentication-token-to-api-call-in-header
 
   @GetMapping("/s/{shortUrl}")
   public Mono<ResponseEntity<Object>> redirectToLongUrl(
