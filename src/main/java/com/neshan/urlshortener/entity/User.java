@@ -2,8 +2,7 @@ package com.neshan.urlshortener.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -11,7 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import javax.persistence.*;
 
 @Entity
-@Getter @Setter
+@Getter @Setter @NoArgsConstructor
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE, region = "user")
 @Table(name = "user", schema = "public")
@@ -26,10 +25,10 @@ public class User {
         this.password = new BCryptPasswordEncoder().encode(password);
     }
 
-    public boolean checkPassword(String password) {
-        return new BCryptPasswordEncoder().matches(password, this.password);
+    public User(String username, String password) {
+        setUsername(username);
+        setPassword(password);
     }
-
 }
 
 

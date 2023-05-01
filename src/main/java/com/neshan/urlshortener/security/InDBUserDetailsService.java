@@ -1,4 +1,4 @@
-package com.neshan.urlshortener.service;
+package com.neshan.urlshortener.security;
 
 import com.neshan.urlshortener.entity.User;
 import com.neshan.urlshortener.repo.UserRepository;

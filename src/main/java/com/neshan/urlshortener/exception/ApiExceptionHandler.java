@@ -11,19 +11,9 @@ import reactor.core.publisher.Mono;
 @ControllerAdvice
 public class ApiExceptionHandler {
 
-  @ExceptionHandler(InvalidTokenException.class)
-  public Mono<ResponseEntity<String>> handleInvalidTokenException(InvalidTokenException ex) {
-    return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage()));
-  }
-
-  @ExceptionHandler(AuthorizationException.class)
-  public Mono<ResponseEntity<String>> handleInvalidTokenException(AuthorizationException ex) {
-    return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage()));
-  }
-
-  @ExceptionHandler(UserLimitException.class)
-  public Mono<ResponseEntity<String>> handleUserLimitException(UserLimitException ex) {
-    return Mono.just(ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(ex.getMessage()));
+  @ExceptionHandler(ApiException.class)
+  public Mono<ResponseEntity<String>> handleInvalidTokenException(ApiException ex) {
+    return Mono.just(ResponseEntity.status(HttpStatus.valueOf(ex.getErrorCode())).body(ex.getMessage()));
   }
 
   @ExceptionHandler(IllegalArgumentException.class)

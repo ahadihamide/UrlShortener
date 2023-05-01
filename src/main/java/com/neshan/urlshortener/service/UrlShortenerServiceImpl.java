@@ -1,13 +1,12 @@
 package com.neshan.urlshortener.service;
 
 import com.neshan.urlshortener.entity.ShortUrl;
-import com.neshan.urlshortener.exception.AuthorizationException;
+import com.neshan.urlshortener.exception.UnauthorizedException;
 import com.neshan.urlshortener.exception.UserLimitException;
 import com.neshan.urlshortener.repo.ShortUrlRepository;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import javax.transaction.Transactional;
@@ -76,7 +75,7 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
             .findById(url)
             .orElseThrow(() -> new IllegalArgumentException("ShortUrl not found!"));
     if (!username.equals(shortUrl.getUsername()))
-      throw new AuthorizationException("ShortUrl Does not belong to this user!");
+      throw new UnauthorizedException("ShortUrl Does not belong to this user!");
     shortUrlRepository.deleteById(url);
   }
 

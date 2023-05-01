@@ -2,26 +2,26 @@ package com.neshan.urlshortener.controller;
 
 import com.neshan.urlshortener.exception.InvalidTokenException;
 import com.neshan.urlshortener.exception.UserLimitException;
-import com.neshan.urlshortener.model.DeleteRequest;
-import com.neshan.urlshortener.model.ShortenRequest;
-import com.neshan.urlshortener.service.InDBUserDetailsService;
+import com.neshan.urlshortener.security.InDBUserDetailsService;
 import com.neshan.urlshortener.service.UrlShortenerService;
-import com.neshan.urlshortener.utils.JwtUtil;
 import com.neshan.urlshortener.utils.UrlUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.util.Map;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
 public class UrlShortenerController {
-
   private final UrlShortenerService urlShortenerService;
   private final InDBUserDetailsService userDetailsService;
 
@@ -34,16 +34,18 @@ public class UrlShortenerController {
     this.userDetailsService = userDetailsService;
   }
 
-  @PostMapping("/shorten")
-  public Mono<String> shortenUrl(@RequestBody ShortenRequest req)
+  @Operation(security = @SecurityRequirement(name = "bearerAuth"))
+  @GetMapping("/shorten")
+  public Mono<String> shortenUrl(@RequestParam String longUrl, Authentication authentication)
       throws InvalidTokenException, UserLimitException {
-    String username = JwtUtil.getUsernameFromToken(req.getAuthToken());
-    return Mono.just(username)
+    return Mono.just(authentication.getName())
         .flatMap(userDetailsService::findByUsername)
-        .filter(userDetails -> JwtUtil.isValidateToken(req.getAuthToken(), userDetails))
-        .flatMap(userDetails -> urlShortenerService.shortenUrl(req.getLongUrl(), username))
+        .filter(userDetails -> Objects.equals(authentication.getName(), userDetails.getUsername()))
+        .flatMap(userDetails -> urlShortenerService.shortenUrl(longUrl, authentication.getName()))
         .map(baseUrl::concat);
   }
+  // https://swagger.io/docs/specification/authentication/bearer-authentication/
+  // https://stackoverflow.com/questions/33435286/swagger-ui-passing-authentication-token-to-api-call-in-header
 
   @GetMapping("/s/{shortUrl}")
   public Mono<ResponseEntity<Object>> redirectToLongUrl(
@@ -64,14 +66,16 @@ public class UrlShortenerController {
     return urlShortenerService.getVisit(removeBaseUrl(shortUrl));
   }
 
+  @Operation(security = @SecurityRequirement(name = "bearerAuth"))
   @DeleteMapping("/shorten")
-  public Mono<String> deleteShortenUrl(@RequestBody DeleteRequest req) {
-    String username = JwtUtil.getUsernameFromToken(req.getAuthToken());
+  public Mono<String> deleteShortenUrl(
+      @RequestParam String shortUrl, Authentication authentication) {
     return userDetailsService
-        .findByUsername(username)
-        .filter(userDetails -> JwtUtil.isValidateToken(req.getAuthToken(), userDetails))
+        .findByUsername(authentication.getName())
+        .filter(userDetails -> Objects.equals(authentication.getName(), userDetails.getUsername()))
         .doOnNext(
-            userDetails -> urlShortenerService.delete(removeBaseUrl(req.getShortUrl()), username))
+            userDetails ->
+                urlShortenerService.delete(removeBaseUrl(shortUrl), authentication.getName()))
         .map(userDetails -> "Successfully deleted!");
   }
 
