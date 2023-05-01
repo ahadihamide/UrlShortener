@@ -47,19 +47,27 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
 
   @Override
   public Mono<String> shortenUrl(String longUrl, String username) throws UserLimitException {
-    List<ShortUrl> userUrls = shortUrlRepository.findByUsername(username).orElse(List.of());
-    Optional<ShortUrl> existShortUrl =
-        userUrls.stream().filter(shortUrl -> shortUrl.getLongUrl().equals(longUrl)).findAny();
-    if (existShortUrl.isPresent()) return Mono.just(existShortUrl.get().getShortUrl());
+    RLock lock = redissonClient.getLock(username);
+    if (lock.tryLock()) {
+      List<ShortUrl> userUrls = shortUrlRepository.findByUsername(username).orElse(List.of());
+      try {
+        Optional<ShortUrl> existShortUrl =
+            userUrls.stream().filter(shortUrl -> shortUrl.getLongUrl().equals(longUrl)).findAny();
+        if (existShortUrl.isPresent()) return Mono.just(existShortUrl.get().getShortUrl());
 
-    if (userUrls.size() >= 10) {
-      throw new UserLimitException("User has already registered 10 shortened URLs");
+        if (userUrls.size() >= 10) {
+          throw new UserLimitException("User has already registered 10 shortened URLs");
+        }
+        return generateShortUrl(longUrl, username)
+            .doOnNext(
+                shortUrl ->
+                    shortUrlRepository.save(
+                        new ShortUrl(username, shortUrl, longUrl, LocalDate.now(), 0L)));
+      } finally {
+        lock.unlock();
+      }
     }
-    return generateShortUrl(longUrl, username)
-        .doOnNext(
-            shortUrl ->
-                shortUrlRepository.save(
-                    new ShortUrl(username, shortUrl, longUrl, LocalDate.now(), 0L)));
+    throw new UserLimitException("Too many request, try later.");
   }
 
   @Transactional

@@ -27,4 +27,6 @@ public interface ShortUrlRepository extends CrudRepository<ShortUrl,String> {
     @Transactional
     @Query("UPDATE ShortUrl s set s.visitCount = s.visitCount + 1 , s.lastVisit= CURRENT_DATE WHERE s.shortUrl = :url")
     void incrementVisitAndUpdateLastVisit(String url);
+
+    Optional<Long> countByUsername(String username);
 }
