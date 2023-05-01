@@ -10,7 +10,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import javax.transaction.Transactional;
-
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -20,10 +19,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-@Service @Slf4j @EnableScheduling
+@Service
+@Slf4j
+@EnableScheduling
 public class UrlShortenerServiceImpl implements UrlShortenerService {
 
   private final ShortUrlRepository shortUrlRepository;
+  @Autowired private RedissonClient redissonClient;
 
   public UrlShortenerServiceImpl(ShortUrlRepository shortUrlRepository) {
     this.shortUrlRepository = shortUrlRepository;
@@ -65,7 +67,8 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
   public Mono<String> getLongUrlAndIncrementVisit(String shortUrl) {
     return Mono.just(shortUrl)
         .map(url -> shortUrlRepository.findByIdAndIncrementVisit(url).orElseThrow())
-        .map(ShortUrl::getLongUrl).doOnError(t -> log.error(t.getMessage()));
+        .map(ShortUrl::getLongUrl)
+        .doOnError(t -> log.error(t.getMessage()));
   }
 
   @Override
@@ -92,20 +95,17 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
     return Mono.just(hashUrl(username + longUrl).substring(0, 7));
   }
 
-  @Autowired
-  private RedissonClient redissonClient;
   @Scheduled(cron = "0 0 0 * * *") // run at midnight every day
   @Transactional
   public void deleteOldUrls() {
     LocalDate cutoffDate = LocalDate.now().minusYears(1);
-    log.info("deleting urls older than {}" , cutoffDate);
+    log.info("deleting urls older than {}", cutoffDate);
     RLock lock = redissonClient.getLock(cutoffDate.toString());
-    lock.lock();
-    try {
-      shortUrlRepository.deleteByLastVisitBefore(java.sql.Date.valueOf((cutoffDate)));
-    } finally {
-      lock.unlock();
-    }
-
+    if (lock.tryLock())
+      try {
+        shortUrlRepository.deleteByLastVisitBefore(java.sql.Date.valueOf((cutoffDate)));
+      } finally {
+        lock.unlock();
+      }
   }
 }
